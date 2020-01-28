@@ -1,0 +1,111 @@
+################################################################################
+#                       Input parameter file for DiskDyn                       #
+#                                Version 0.01                                  #
+#                                    2018                                      #
+#                                                                              #
+# This file contains the running parameters for the program D3D. If there are  #
+# any errors, please email authors of the program. Feel free to make comments  # 
+# in this parameter file, by starting lines with the '#' sign. Empty rows are  #
+# ignored. To ensure correct execution, do not modify the order of the         #
+# parameters. The example file models the Solar System.                        #
+#                                                                              #
+# Andras Gaspar                                                                #
+# Steward Observatory, University of Arizona                                   #
+# email: agaspar@as.arizona.edu                                                #
+# phone: 1-(520)-626-9898                                                      #
+#                                                                              #
+# Chi-Kwan Chan                                                                #
+# Steward Observatory, University of Arizona                                   #
+# email: chanc@email.arizona.edu                                               #
+# phone: 1-(520)-621-6029                                                      #
+#                                                                              #
+# Tucson, Az, US                                                               #
+################################################################################
+# Verbose level
+# 0: none; 1: low level; 2: medium level; 3: ALL
+2
+
+# GPU ID to use
+2
+
+# Graphical Output (yes/no); timestep of graphical output (yr) - NOT YET CODED IN
+no 100
+
+# Data, images, and SED written out at timesteps (yr) 
+# Data output takes a long time and generates large file sizes. Be careful.
+# SED output is relatively fast, but does calculate at all wavelengths
+# a full image
+100.0 1.0 100.0
+
+# End of time for evolution (yr)
+300
+
+# Number of dynamical steps per orbit for inner particles
+# (recommended to be kept > 100)
+300
+
+# Stellar mass in solar units; Spectral-type; Stellar Teff (K); Stellar Radius in solar units;
+# Magnetic field strength at surface of star (Gauss); Stellar rotation period (day); Stellar wind mass
+# loss rate (M_odot/year) and speed (km/s). Teff gets overwritten by stellar spectra if one is given.
+# Stellar parameters are necessary for inclusion of dynamics. Gravity: mass; PR-drag: Teff, R;
+# Wind-drag: mass loss; Magnetic: Rotation and field strength. If some effects are not calculated
+# you still need to enter a value for the parameter (will be ignored)
+1.18 F5 6450 1.3 1.0 30.0 6.0e-12 450.0
+
+# System geometry
+# Distance (pc), FOV (AU), PA (deg), viewing inclination (deg), longitude (deg), xsize, ysize
+50.6 250.0 11.2 -28.5 0.0 1024 1024
+
+# Observational Wavelengths (in micron)
+0.600	2.100	3.100	3.550	4.400	10.650	15.500	23.000	25.500
+#0.600
+
+# Stellar spectral input
+# Either give a filename (with access path) or write "Library". Spectral files need to have two
+# columns (Wavelength and Flux), with wavelength in "meter" unit and flux in "J/s/m/m^2" unit and
+# the file should be increasing in wavelength. If "Library" is given, Kurucz input files are used
+# that are supplied with the code with the nearest temperature value at log(g)=4.5.
+Library
+
+# Physics to include: Radiative forces (yes/no) (PRD and blowout)? Stellar-wind drag (yes/no), 
+# Magnetic forces (yes/no)?
+yes no no
+
+# Planetary parameters [i(deg), a (AU), e, nu (deg), o (deg), w (deg), m (solar 
+# mass)] Planets need to be listed between "begin_planets" and "end_planets"
+
+begin_planets
+end_planets
+
+# bulk density (g cm^3), composition data file, k_q electric charge coeff (e-/nm)
+# Only modeling one composition per system in current version.
+3.5 optical/astrosil.dat 27.5
+
+# Disk parameters [r_in (AU), r_out (AU), dh/dr, sigma_e,\
+# A_max (km), A_min (micron), eta_a, M_tot (M_Earth), gamma, Ngrav, Nsmall]
+# Disks need to be listed between "begin_disks" and "end_disks".
+# dh/dr gives the gaussian sigma of the vertical density distribution.
+# r_in must be > 0. gamma gives the surface density profile, n_surf ~ r^gamma; (gamma=0 -> constant).
+# Particles will be generated evenly spaced in mass/size log space.
+# Nsmall will be rounded.
+
+begin_disks
+68.3 104.3 0.05 0.05 1e-5 0.1 3.67 0.625 -1.0 0 10000000
+end_disks
+
+# Gaussian distribution of dust blobs to simulate dust produced in stochastic
+# events. Give a (AU), e, i (deg), w (deg), o (deg), nu (deg), A_max (km), A_min (micron), 
+# eta_a, M_tot (M_Earth), Ngrav, Nsmall, either "collision" or "cloud". Last parameter
+# is either delta_v (in % of V_kep) or sigma_a (AU). If collision, give delta_v of keplerian 
+# (in percent) speed. If cloud, give sigma_a (AU) of cloud. The cloud switch gives a cloud 
+# of particles with a single velocity that will sheer and the collision switch will give a 
+# random direction velocity addition of delta_v (in percent of Keplerian) to particle speeds. 
+# Blobs need to be listed between "begin_blobs" and "end_blobs". Particles will be generated 
+# evenly spaced in mass/size log space. Nsmall will be rounded!
+
+begin_blobs
+#10.0 0.6 3.0 0.0 0.0 0.0 10.0 0.01 3.65 3.03 0 1000000 cloud 0.1
+end_blobs
+
+# Out file name stub
+JWST/HD181327
