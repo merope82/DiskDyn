@@ -11,8 +11,11 @@ The github package contains the source code, test files, tools to calculate opti
 Once downloaded, cfitsio needs to be compiled first, unless the system already has cfitsio installed.
 
 $ cd cfitsio
+
 $ ./configure
+
 $ make
+
 $ cd ../
 
 If a system-wide cfitsio is used, the Makefile in src needs to be edited to point to proper libraries and include locations. Otherwise, a simple make command will compile all the necessary components.
