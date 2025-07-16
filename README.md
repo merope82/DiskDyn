@@ -41,3 +41,10 @@ If new optical constants are required, they need to be calculated using the runm
 # Example simulations using DiskDyn
 
 DiskDyn calculates the dynamical evolution of debris disks and dust clouds, dynamically perturbed by planets and/or gravitating swarm of bodies. The code also calculates images in both scattered light and thermal emission at requested wavelengths (assuming mie scattering) accounting for scattering angles. Additionally, complete SEDs are also calculated at requested time intervals.
+
+# Updates
+
+Ver 1.01:
+
+- Corrections to stellar wind drag calculations
+- CUDA architecture compatibility modifications

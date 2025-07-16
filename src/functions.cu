@@ -21,9 +21,9 @@ void coe2rv(double M,double m,double a,double e,double i,double w,double o,\
     double vxe = -sqrt(mu/p)*sin(nu);        	// velocity in x (AU/yr)
     double vye =  sqrt(mu/p)*(e+cos(nu));    	// velocity in y (AU/yr)
     double vze =  0;                            // velocity in z (AU/yr)
-   
+
     // Rotate 
-   
+
     *x  = xe*(cos(o)*cos(w)-sin(o)*sin(w)*cos(i))  + \
 	  ye*(-cos(o)*sin(w)-sin(o)*cos(w)*cos(i)) + \
           ze*( sin(o)*sin(i));
@@ -257,9 +257,9 @@ void interpolate_dust_to_grid(){
     Qpfunc = (double *)malloc(sizeof(double)*cfg->n_grid*cfg->n_wav*cfg->n_theta);
     if ( !Qpfunc )	exit_with_usage(50);
     cfg->mem += sizeof(double)*cfg->n_grid*cfg->n_wav*cfg->n_theta;
-    cfg->q = (double *)malloc(sizeof(double)*cfg->n_grid);
+    cfg->q = (float *)malloc(sizeof(float)*cfg->n_grid);
     if ( !cfg->q )	exit_with_usage(50);
-    cfg->mem += sizeof(double)*cfg->n_grid;
+    cfg->mem += sizeof(float)*cfg->n_grid;
 
     int im=0;
     int ip=0;
@@ -338,13 +338,15 @@ void interpolate_stellar_to_grid(){
 void calculate_beta(){
     configdata *cfg = &cconfig;
 
-    cfg->beta   = (double *)malloc(sizeof(double)*cfg->n_dust);
+    cfg->beta   = (float *)malloc(sizeof(float)*cfg->n_dust);
     if ( !cfg->beta )	exit_with_usage(52);
-    cfg->mem += sizeof(double)*cfg->n_dust;
+    cfg->betasw = (float *)malloc(sizeof(float)*cfg->n_dust);
+    if ( !cfg->betasw )	exit_with_usage(52);
+    cfg->mem += 2*sizeof(float)*cfg->n_dust;
     double *Qpr = (double *)malloc(sizeof(double)*cfg->n_wav);
     if ( !Qpr )		exit_with_usage(52);
 
-    cfg->betasw = 3.0 * cfg->mloss * Cd * MSun * year * cfg->vsw / 32.0 / PI / cfg->planets[0].m / cfg->rho / AU / AU / AU;
+    cfg->betaswconst = 3.0 * cfg->mloss * Cd * MSun * year * cfg->vsw / 32.0 / PI / cfg->planets[0].m / cfg->rho / AU / AU / AU;
 
     // Integrate star once
     double Star=0.0;
@@ -372,14 +374,17 @@ void calculate_beta(){
 	    for ( int j=0 ; j<cfg->n_wav-1 ; j++ ) Qsum += 0.5*(cfg->w[j+1]-cfg->w[j])*(Qpr[j+1]+Qpr[j]);
 	    cfg->beta[i] = 0.57 * Qsum/Star * (cfg->Lum/cfg->planets[0].m*Grav) / cfg->s[i]/1e6 / cfg->rho/1e-3;
 	}
-	else
+	else{
 	    cfg->beta[i]  = 0.0;
+	}
 	if ( cfg->SWQ==1 ){
-	    cfg->beta[i] += cfg->betasw / cfg->s[i];
+	    cfg->betasw[i] = cfg->betaswconst / cfg->s[i];
+	}
+	else{
+	    cfg->betasw[i] = 0.0;
 	}
     }
     free(Qpr);
-
 }
 
 double intens(double temp,double wvl) /* B_lambda */

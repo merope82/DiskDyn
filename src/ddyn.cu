@@ -5,11 +5,15 @@
 /** Written for systems with CUDA cards with compute capabilities >= 2.1.   **/
 /*****************************************************************************/
 /** Release version & date:                                                 **/
-/**/ const char *Version = "0.01";                                         /**/
-/**/ const char *VDate   = "10.12.2018";                                   /**/
+/**/ const char *Version = "1.01";                                         /**/
+/**/ const char *VDate   = "4.23.2025";                                    /**/
 /** Authors: Andras Gaspar (agaspar@as.arizona.edu)                         **/
 /*****************************************************************************/
 /** More info: http://merope.as.arizona.edu/~agaspar/DiskDyn                **/
+/*****************************************************************************/
+/* Updates                                                                  **/
+/* - Memory handling for newer GPU architectures                            **/
+/* - Stellar Wind drag properly handled                                     **/
 /*****************************************************************************/
 
 #include <stdio.h>
@@ -21,10 +25,12 @@
 configdata	cconfig;
 cudadata	ccuda;
 
-__constant__ double size[nsize];	// If only these two are in constant 
-__constant__ double beta[nsize];	// memory, this is the max size!
-__constant__ double    q[nsize];	// memory, this is the max size!
-__device__   double doubletmp;		// Temporary device double value
+// trying some of these as floats instead of doubles for memory conservation in const
+__constant__ double size[nsize];	// Size is kept double
+__constant__ float  beta[nsize];	// beta can be float
+__constant__ float  betasw[nsize];	// betasw can be float
+__constant__ float  q[nsize];		// q can be float
+__device__   double doubletmp;		// temporary double mem
 
 /*****************************************************************************/
 
@@ -95,9 +101,10 @@ int main(int argc,char *argv[])
 	case 1: grid->setup(); break;
 	case 2: grid->read_in(model); break;
     }
-    
+
+    fflush(stdout);
     // Evolve system
-    grid->evolve(Version);    
+    grid->evolve(Version);
     printdone();
  
     return(0);

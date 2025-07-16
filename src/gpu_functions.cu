@@ -624,21 +624,22 @@ __global__ void RK4calc_massive_final(int n_grav,coord gpu,double dt){ //dt/6 in
     }
 }
 
-__global__ void RK4calc_dust(int n_grav,int n_dust,coord gpu,double dt,int FLQ,double Wz,double Bstar,double Rstar,double rho){
+__global__ void RK4calc_dust(int n_grav,int n_dust,coord gpu,double dt,int FLQ,double Wz,double Bstar,double Rstar,double rho,int SWQ,double vswAU,double Rmin){
 
     int i = threadIdx.x + blockIdx.x * blockDim.x;
-    
+
     if ( i < n_dust ){
 	double k1vx,k1vy,k1vz;
 	double k2vx,k2vy,k2vz,k2rx,k2ry,k2rz;
 	double k3vx,k3vy,k3vz,k3rx,k3ry,k3rz;
 	double k4vx,k4vy,k4vz,k4rx,k4ry,k4rz;
-	double dt2,dt6,RR,RR3,qe,bet,m,Fg;
+	double dt2,dt6,RR,RR3,m,Fg;
 	double xt,yt,zt,x,y,z,vx,vy,vz,dx,dy,dz,f;
 	double Fbase1,Fbase2,Fdrx,Fdry,Fdrz,Flx,Fly;
+	float  bet,betsw,qe;
 
 	int t = n_grav + i;
-    
+
 	if ( gpu.N[t] == 0 ) return;
 
 	int id = gpu.id[t];
@@ -651,10 +652,14 @@ __global__ void RK4calc_dust(int n_grav,int n_dust,coord gpu,double dt,int FLQ,d
 	vx    = gpu.vx[t];			// vx in AU/yr
 	vy    = gpu.vy[t];
 	vz    = gpu.vz[t];
-	if ( id <0 )
+	if ( id <0 ){
 	    bet   = 0;
-	else
-	    bet = beta[id];
+	    betsw = 0;
+	}
+	else{
+	    bet   = beta[id];
+	    betsw = betasw[id];
+	}
 
 	m     = gpu.m[t];
 	qe    = q[id];
@@ -678,14 +683,20 @@ __global__ void RK4calc_dust(int n_grav,int n_dust,coord gpu,double dt,int FLQ,d
 	dz    = z - gpu.k1z[0];
         RR    = dx * dx + dy * dy + dz * dz;
 	RR3   = RR * sqrt(RR);
-	if ( RR == 0 ){
-	    gpu.N[t]=0;		// Haywired!
+	if ( RR <= Rmin*Rmin ){
+	    gpu.N[t]=0;		// Sublimated!
 	    return;
 	}
 
-        Fg     = ( 1.0 - bet ) * gpu.m[0] / RR3;
+        Fg     = ( 1.0 - bet - betsw ) * gpu.m[0] / RR3;
 
-	Fbase1 = bet * gpu.m[0] / lightAU / RR;
+//	Fbase1 = bet * gpu.m[0] / lightAU / RR;
+	if ( SWQ == 1){
+	    Fbase1 = gpu.m[0] / RR * ( bet / lightAU + betsw / vswAU );
+	}
+	else{
+	    Fbase1 = bet * gpu.m[0] / lightAU / RR;
+	}
 	Fbase2 = ( dx * vx + dy * vy + dz * vz ) / RR;
 
         Fdrx  = Fbase1 * ( Fbase2 * dx + vx ); 
@@ -737,14 +748,19 @@ __global__ void RK4calc_dust(int n_grav,int n_dust,coord gpu,double dt,int FLQ,d
 	dz    = zt - gpu.k2z[0];
         RR    = dx * dx + dy * dy + dz * dz;
 	RR3   = RR * sqrt(RR);
-	if ( RR == 0 ){
+	if ( RR <= Rmin*Rmin ){ // Sublimated
 	    gpu.N[t]=0;
 	    return;
 	}
 
-        Fg     = ( 1.0 - bet ) * gpu.m[0] / RR3;
+        Fg     = ( 1.0 - bet - betsw ) * gpu.m[0] / RR3;
 
-	Fbase1 = bet * gpu.m[0] / lightAU / RR;
+	if ( SWQ == 1){
+	    Fbase1 = gpu.m[0] / RR * ( bet / lightAU + betsw / vswAU );
+	}
+	else{
+	    Fbase1 = bet * gpu.m[0] / lightAU / RR;
+	}
 	Fbase2 = ( dx * k2rx + dy * k2ry + dz * k2rz ) / RR;
 
         Fdrx  = Fbase1 * ( Fbase2 * dx + k2rx ); 
@@ -795,14 +811,19 @@ __global__ void RK4calc_dust(int n_grav,int n_dust,coord gpu,double dt,int FLQ,d
 	dz    = zt - gpu.k3z[0];
         RR    = dx * dx + dy * dy + dz * dz;
 	RR3   = RR * sqrt(RR);
-	if ( RR == 0 ){
+	if ( RR <= Rmin*Rmin ){
 	    gpu.N[t]=0;
 	    return;
 	}
 
-        Fg     = ( 1.0 - bet ) * gpu.m[0] / RR3;
+        Fg     = ( 1.0 - bet - betsw ) * gpu.m[0] / RR3;
 
-	Fbase1 = bet * gpu.m[0] / lightAU / RR;
+	if ( SWQ == 1){
+	    Fbase1 = gpu.m[0] / RR * ( bet / lightAU + betsw / vswAU );
+	}
+	else{
+	    Fbase1 = bet * gpu.m[0] / lightAU / RR;
+	}
 	Fbase2 = ( dx * k3rx + dy * k3ry + dz * k3rz ) / RR;
 
         Fdrx  = Fbase1 * ( Fbase2 * dx + k3rx ); 
@@ -853,14 +874,19 @@ __global__ void RK4calc_dust(int n_grav,int n_dust,coord gpu,double dt,int FLQ,d
 	dz    = zt - gpu.k4z[0];
     	RR    = dx * dx + dy * dy + dz * dz;
 	RR3   = RR * sqrt(RR);
-	if ( RR == 0 ){
+	if ( RR <= Rmin*Rmin ){
 	    gpu.N[i]=0;
 	    return;
 	}
 
-        Fg     = ( 1.0 - bet ) * gpu.m[0] / RR3;
+        Fg     = ( 1.0 - bet - betsw ) * gpu.m[0] / RR3;
 
-	Fbase1 = bet * gpu.m[0] / lightAU / RR;
+	if ( SWQ == 1){
+	    Fbase1 = gpu.m[0] / RR * ( bet / lightAU + betsw / vswAU );
+	}
+	else{
+	    Fbase1 = bet * gpu.m[0] / lightAU / RR;
+	}
 	Fbase2 = ( dx * k4rx + dy * k4ry + dz * k4rz ) / RR;
 
         Fdrx  = Fbase1 * ( Fbase2 * dx + k4rx );
@@ -951,7 +977,7 @@ __global__ void sum_flux_driver(int ndust,double *Fdust){
 	__syncthreads();
     }
     if ( t==0 ) atomicAdd_double(&doubletmp,var[0]);
-        
+
 }
 
 __global__ void calc_flux_driver(int n_grav,int n_dust,coord gpu,double dist,double Rmin,double Rmax,\
@@ -959,7 +985,7 @@ __global__ void calc_flux_driver(int n_grav,int n_dust,coord gpu,double dist,dou
                 int nwav,int ndust,int ntheta,int wj,double rot,double incl,double PA,int xsize,int ysize,double FOV){
 
     int i = threadIdx.x + blockIdx.x * blockDim.x;
-    
+
     if ( i < n_dust ){
 	int t = n_grav + i;
 	int id = gpu.id[t];
@@ -1048,7 +1074,9 @@ __global__ void calc_flux_driver(int n_grav,int n_dust,coord gpu,double dist,dou
 	double Fscat = in[wj]*PI*size[id]*size[id]*Qsca[nwav*id+wj]*P/R/R/AU/AU;	// Looks good
 	double Fther = I*size[id]*size[id]*Qabs[nwav*id+wj]/dist/dist; 			// Looks good
 
-        atomicAdd_double(&Fd[ysize*xim+yim],n*(Fther+Fscat)*1e26*wvl*wvl/cspeed);
+	if ( R > Rmin )
+    	    atomicAdd_double(&Fd[ysize*xim+yim],n*(Fther+Fscat)*1e26*wvl*wvl/cspeed);
+
     }
 }
 
@@ -1057,7 +1085,7 @@ __global__ void calc_flux_sed_driver(int n_grav,int n_dust,coord gpu,double dist
                 int nwav,int ndust,int ntheta,int wj,double rot,double incl,double PA){
 
     int i = threadIdx.x + blockIdx.x * blockDim.x;
-    
+
     if ( i < n_dust ){
 	int t = n_grav + i;
 	int id = gpu.id[t];
@@ -1071,14 +1099,12 @@ __global__ void calc_flux_sed_driver(int n_grav,int n_dust,coord gpu,double dist
 	double n     = gpu.N[t];
 
 	double phi   = atan2(y,x);
-	double R     = sqrt(x*x+y*y);
+	double R     = sqrt(x*x+y*y+z*z);
 	double wvl   = w[wj];
 
 	// Let's rotate system 
 	x = R*cos(phi+rot);
 	y = R*sin(phi+rot);
-
-	R = sqrt(x*x+y*y+z*z);
 
 	// particle at x,y,z;
 	// viewing location in star center coordinates: lxs=0; lys=-dist*sin(incl); lzs=dist*cos(incl)
@@ -1088,7 +1114,7 @@ __global__ void calc_flux_sed_driver(int n_grav,int n_dust,coord gpu,double dist
 	// cosscat = (sx*lx+sy*ly+sz*lz)/R/L;
 	double ly = -dist*sin(incl)-y;
 	double lz =  dist*cos(incl)-z;
-	
+
 	double cossc = (x*x+(-y)*ly+(-z)*lz)/R/sqrt(x*x+ly*ly+lz*lz);
 	// Safety switch
 	if ( cossc < -1  ) cossc = -1.0;
@@ -1122,7 +1148,9 @@ __global__ void calc_flux_sed_driver(int n_grav,int n_dust,coord gpu,double dist
 	double Fscat = in[wj]*PI*size[id]*size[id]*Qsca[nwav*id+wj]*P/R/R/AU/AU;	// Looks good
 	double Fther = I*size[id]*size[id]*Qabs[nwav*id+wj]/dist/dist; 			// Looks good
 
-        Fdust[i] = n * ( Fther + Fscat ) * 1e26 *wvl * wvl / cspeed;
+	if ( R > Rmin)
+    	    Fdust[i] = n * ( Fther + Fscat ) * 1e26 *wvl * wvl / cspeed;
+	else
+	    Fdust[i] = 0.0;
     }
 }
-

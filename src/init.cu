@@ -646,9 +646,24 @@ void Grid::sync_dust_to_gpu(){
     gpuErrchk(cudaMemcpy(w       ,cfg->w          ,sizeof(double)*cfg->n_wav,cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(in      ,cfg->in         ,sizeof(double)*cfg->n_wav,cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpyToSymbol(size,cfg->s      ,sizeof(double)*cfg->n_dust,0,cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpyToSymbol(beta,cfg->beta   ,sizeof(double)*cfg->n_dust,0,cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpyToSymbol(q,cfg->q         ,sizeof(double)*cfg->n_dust,0,cudaMemcpyHostToDevice));
+    double *psize;
+    float *bvalue;
+    float *bswvalue;
+    float *qvalue;
+    cudaGetSymbolAddress((void **)&psize,size); // get a pointer to size
+    cudaMemcpy(psize,cfg->s,sizeof(double)*cfg->n_dust,cudaMemcpyHostToDevice);
+    cudaGetSymbolAddress((void **)&bvalue,beta); // get a pointer to beta 
+    cudaMemcpy(bvalue,cfg->beta,sizeof(float)*cfg->n_dust,cudaMemcpyHostToDevice);
+    cudaGetSymbolAddress((void **)&bswvalue,betasw); // get a pointer to betasw 
+    cudaMemcpy(bswvalue,cfg->betasw,sizeof(float)*cfg->n_dust,cudaMemcpyHostToDevice);
+    cudaGetSymbolAddress((void **)&qvalue,q); // get a pointer to size
+    cudaMemcpy(qvalue,cfg->q,sizeof(float)*cfg->n_dust,cudaMemcpyHostToDevice);
+
+//    cudaMemcpyToSymbol(size,cfg->s,sizeof(double)*cfg->n_dust,0,cudaMemcpyHostToDevice);
+//    cudaMemcpyToSymbol(beta,cfg->beta,sizeof(float)*cfg->n_dust,0,cudaMemcpyHostToDevice);
+//    cudaMemcpyToSymbol(betasw,cfg->betasw,sizeof(float)*cfg->n_dust,0,cudaMemcpyHostToDevice);
+//    cudaMemcpyToSymbol(q,cfg->q,sizeof(float)*cfg->n_dust,0,cudaMemcpyHostToDevice);
+
 }
 
 

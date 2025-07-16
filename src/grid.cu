@@ -140,7 +140,7 @@ void Grid::setup(){
 	// Redefine limit to grid
 	double mmax = cfg->mmin * exp(round(log(cfg->disks[j].dmmax/cfg->mmin)/cfg->f)*cfg->f);
 	double mmin = cfg->mmin * exp(round(log(cfg->disks[j].mmin /cfg->mmin)/cfg->f)*cfg->f);
-	int Ngrid = (int)(log(mmax/mmin)/log(mgrid)+1.0);
+	int Ngrid = round(log(mmax/mmin)/log(mgrid)+1);
 	int Npg   = round((double)(cfg->disks[j].Nsmall)/((double)Ngrid));
         reallochost(Npg*Ngrid);
 	n_dust += Npg*Ngrid;
@@ -166,7 +166,7 @@ void Grid::setup(){
     for ( int j=0 ; j < cfg->n_blobs ; j++ ){
 	double mmax = cfg->mmin * exp(round(log(cfg->blobs[j].dmmax/cfg->mmin)/cfg->f)*cfg->f);
 	double mmin = cfg->mmin * exp(round(log(cfg->blobs[j].mmin /cfg->mmin)/cfg->f)*cfg->f);
-	int Ngrid = (int)(log(mmax/mmin)/log(mgrid)+1.0);
+	int Ngrid = round(log(mmax/mmin)/log(mgrid)+1);
 	int Npg   = round((double)(cfg->blobs[j].Nsmall)/((double)Ngrid));
         reallochost(Npg*Ngrid);
 	n_dust += Npg*Ngrid;
@@ -350,7 +350,8 @@ void Grid::evolve(const char * Version){
     printtimestep(dt);
     double dttmp = dt;
 
-    cfg->betasw = 3.0 * cfg->mloss * Cd * MSun * year * cfg->vsw / 32.0 / PI / cfg->planets[0].m / cfg->rho / AU / AU / AU;
+    // Why twice? I don't think this is needed, whether param file or model input.
+//    cfg->betaswconst = 3.0 * cfg->mloss * Cd * MSun * year * cfg->vsw / 32.0 / PI / cfg->planets[0].m / cfg->rho / AU / AU / AU;
 
     // Print initial array
     switch( cfg->model ){ 
@@ -410,8 +411,11 @@ void Grid::evolve(const char * Version){
 	if ( time >= tlastf + cfg->t_fits || time >= cfg->t_end ){ 
 	    printnewline();
 	    for ( int j=0 ; j<cfg->nwavs ; j++ ){
+//		cudaDeviceSynchronize();
 		null_flux();
+//		cudaDeviceSynchronize();
 		calc_flux(cfg->wj[j]);
+//		cudaDeviceSynchronize();
 		write_image(cfg->wj[j],Version);
 		cudaDeviceSynchronize();
 	    }
@@ -730,7 +734,7 @@ void Grid::small_RK4(double dt){
     if ( n_dust >0 ){
 	int block = int(( n_dust - 1.0) / 128.0 + 1.0);
 
-        RK4calc_dust<<<block,128>>>(n_grav,n_dust,gpu,dt,cfg->FLQ,cfg->Wz,cfg->Bstar,cfg->rstar,cfg->rho);
+        RK4calc_dust<<<block,128>>>(n_grav,n_dust,gpu,dt,cfg->FLQ,cfg->Wz,cfg->Bstar,cfg->rstar,cfg->rho,cfg->SWQ,cfg->vsw*year/AU,Rmin);
     }
 }
 
@@ -770,15 +774,15 @@ void Grid::calculate_dust_temp(){
 	for ( int i=1; i<cfg->n_wav ; i++ )
     	    star += 0.5*(cfg->w[i]-cfg->w[i-1])*(cfg->Qabs[k*cfg->n_wav+i-1]*cfg->in[i-1]+cfg->Qabs[k*cfg->n_wav+i]*cfg->in[i])/PI; 				/* Divide by pi, because model is B*pi */
 	star *= pow(cfg->dist,2.0);
-	    
+
 	gflux=0.0;
 	for ( int i=1; i<cfg->n_wav ; i++ )
 	    gflux += 0.5*(cfg->w[i]-cfg->w[i-1])*(cfg->Qabs[k*cfg->n_wav+i-1]*intens(Tsub,cfg->w[i-1])+cfg->Qabs[k*cfg->n_wav+i]*intens(Tsub,cfg->w[i])); 
-	
+
 	Rtmp = 0.5*sqrt(star/gflux);
 	if ( Rtmp < Rmin ) Rmin = Rtmp;
     }
-	    
+
     // Now, calculate R-T array for all dust particles
     int nT = floor((2*Tsub-3)*0.5)+1;
     double *Rarr = (double *)malloc(sizeof(double)*nT);
@@ -796,20 +800,20 @@ void Grid::calculate_dust_temp(){
 
 	star *= pow(cfg->dist,2.0);
 
-	    
+
 	int j=0;
 	for ( double T = 2*Tsub ; T>=3.0 ; T-=2.0 ){
 	    gflux=0.0;
 
 	    for ( int i=1; i<cfg->n_wav ; i++ )
 		gflux += 0.5*(cfg->w[i]-cfg->w[i-1])*(cfg->Qabs[k*cfg->n_wav+i-1]*intens(T,cfg->w[i-1])+cfg->Qabs[k*cfg->n_wav+i]*intens(T,cfg->w[i]));
- 
+
 	    Rarr[j] = 0.5*sqrt(star/gflux);
 	    Tarr[j] = T;
 	    j++;
 	}
 	// Now, interpolate
-	
+
         int im=0;
         int ip=0;
 	for ( int i=0 ; i<nR ; i++ ){

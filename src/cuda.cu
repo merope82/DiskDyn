@@ -65,7 +65,7 @@ int cudaprops(){
 	cudaSetDevice(i);
 	cudaDeviceReset();
 	cudaDeviceSynchronize();
-	cudaThreadSynchronize();
+//	cudaThreadSynchronize();
         CudaError(cudaGetDeviceProperties(&prop,i));
 	int length=strlen(prop.name);
 	cuda->prop[i].name = (char *)malloc(length+1);

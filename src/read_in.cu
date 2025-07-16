@@ -650,7 +650,7 @@ int read_in_param(char *param){
 		cfg->teff = round( cfg->teff / 2500.0 ) * 2500;
 	    else
 		exit_with_usage(40);
-	    cfg->specfile = (char *)malloc(length+18+1);
+	    cfg->specfile = (char *)malloc(length+18+1+8);
 	    if ( !cfg->specfile )	exit_with_usage(49);
     	    cfg->mem += length+18+1;
 	    sprintf(cfg->specfile,"Kurucz/Kurucz_%.0f.dat",cfg->teff);
@@ -1009,6 +1009,6 @@ int read_in_model(char * model,const char *ver){
  i++;
  }
  fclose(fr);
- 
+
  return 0;
 }

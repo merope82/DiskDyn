@@ -11,11 +11,12 @@
 
 NVCC    = nvcc
 
-LIBS = -L ../cfitsio
-INCLUDE = -I ../cfitsio
+LIBS = -L ../cfitsio/
+INCLUDE = -I ../cfitsio/
 
 CFLAGS  = -O3 -D_GNU_SOURCE
-NVFLAGS = -gencode arch=compute_35,code=sm_35 -m64 -rdc=true
+NVFLAGS = -gencode arch=compute_35,code=sm_35 -gencode arch=compute_60,code=sm_60\
+          -Wno-deprecated-gpu-targets -m64 -rdc=true
 LINKS   = -lcudart -lcuda -lm -lstdc++ -lcfitsio
 
 NVCALL = $(NVCC) $(CFLAGS) $(NVFLAGS) $(LIBS) $(INCLUDE)

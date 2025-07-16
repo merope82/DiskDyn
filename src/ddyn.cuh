@@ -164,14 +164,15 @@ typedef struct{
     char*	comp;			/* Optivcal composition file			*/
     double	*w;			/* Interpolation wavelengths			*/
     double	*s;			/* Sizes of dust particles in interpolation	*/
-    double	*q;			/* Charges of dust particles in interpolation	*/
+    float	*q;			/* Charges of dust particles in interpolation	*/
     double	*in;			/* Stellar flux in interpolation		*/
     double	*inexc;			/* Excess fluxes from system in interpolation	*/
-    double	*beta;			/* beta values of dust particles - to const mem	*/
+    float	*beta;			/* beta values of dust particles - to const mem	*/
+    float	*betasw;		/* SW beta values of dust particles - to const  */
     double	*Qabs;			/* Absorption coefficients in interpolation	*/
     double	*Qsca;			/* Total scattering coefficients interpolated	*/
     double	*Qpfunc;		/* Scattering phase function array		*/
-    double	betasw;			/* Beta of stellar wind factor			*/
+    double	betaswconst;		/* Beta of stellar wind factor - base		*/
     int		n_wav;			/* Number of wavelengths in interpolation	*/
     int		n_theta;		/* Number of angles for SPF in interpolation	*/
     int		n_dust;			/* Number of dust grids				*/
@@ -278,8 +279,9 @@ class Grid{
 /****************************************************************************************/
 
 extern __constant__ 	double		size[];
-extern __constant__ 	double		beta[];
-extern __constant__ 	double		q[];
+extern __constant__ 	float		beta[];
+extern __constant__ 	float		betasw[];
+extern __constant__ 	float		q[];
 extern __device__   	double		doubletmp;
 extern			configdata 	cconfig;
 extern			cudadata 	ccuda;
@@ -308,7 +310,7 @@ __global__ void RK4calc_massive7(int,coord,double);
 __global__ void RK4calc_massive8(int,int,int,coord,int);
 __global__ void RK4calc_massive_final(int,coord,double);
 __global__ void RK4calc_dust(int,int,coord,double,int,double,\
-		double,double,double);
+		double,double,double,int,double,double);
 
 /* Calculate dust fluxes on GPU								*/
 __global__ void calc_flux_driver(int,int,coord,double,double,double,\
